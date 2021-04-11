@@ -182,7 +182,7 @@ for P = 1:Nj-1 %Source Point
 end
 B = B';
 
-z = inv(A).*B;
+z = inv(A)*B;
 
 
 
