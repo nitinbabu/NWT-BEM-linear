@@ -42,6 +42,7 @@ for c = 1:length(bc)
         q(c) = bc(c);
         p(c) = NaN;
     end
+    
 end
 
 
@@ -83,14 +84,14 @@ end
 for s = 1:Nj-1
     for f = 1:Nj-1
 % Here I am forming G  and Gn = div(G)*n 2D green's velocity potential 
-if s==f % Doublecheck, currrently placeholders 11.04.21
-    G(s,f) = 0.5;
-    Gn(s,f) = 0;
-else
-    G(s,f) = -(2*pi)^-1*log(sqrt((x(s)-x(f)).^2+(y(s)-y(f)).^2));
-    Gn(s,f) = -(2*pi)^-1*((x(s)-x(f))/((x(s)-x(f)).^2+(y(s)-y(f)).^2)).*nfx(f)-(2*pi)^-1*((y(s)-y(f))/((x(s)-x(f)).^2+(y(s)-y(f)).^2)).*nfy(f);
-end
-end
+    if s==f % Doublecheck, currrently placeholders 11.04.21
+%         G(s,f) = 0.5;
+%         Gn(s,f) = 0;
+    else
+        G(s,f) = -(2*pi)^-1*log(sqrt((x(s)-x(f)).^2+(y(s)-y(f)).^2));
+        Gn(s,f) = -(2*pi)^-1*((x(s)-x(f))/((x(s)-x(f)).^2+(y(s)-y(f)).^2)).*nfx(f)-(2*pi)^-1*((y(s)-y(f))/((x(s)-x(f)).^2+(y(s)-y(f)).^2)).*nfy(f);
+    end
+    end
 end
 
 
@@ -100,6 +101,8 @@ M = Ej;
 
 for P = 1:Nj-1 %Source Point
     for Q = 1:Nj-1 %Field Point
+        
+        if (P~=Q)
         K1 = Gn(P,Q);
         K2 = G(P,Q);
         
@@ -109,8 +112,8 @@ for P = 1:Nj-1 %Source Point
         yj = y(P);
         yj1 = y(Q);
         
-                N1 = @(eta) 0.5*(1-eta);%N1;
-                N2 = @(eta) 0.5*(1+eta);%N2;
+                N1 = @(xi) 0.5*(1-xi);%N1;
+                N2 = @(xi) 0.5*(1+xi);%N2;
                 
 %                 k
                 % % Jacobian of transformation
@@ -118,13 +121,13 @@ for P = 1:Nj-1 %Source Point
                 dxde = dN1de.*xj + dN2de.*xj1;
                 dyde = dN1de.*yj + dN2de.*yj1;
 
-                J = @(eta) sqrt((dxde).^2 + (dyde).^2);
+                J = @(xi) sqrt((dxde).^2 + (dyde).^2);
 %                 K1 = 0.65; K2 = 0.95;
-                id1 = @(eta) K1.*N1(eta).*J(eta); % [Disregard]q1 N1 refer to k-sum counter, not K1 Kernel
-                id2 = @(eta) K1.*N2(eta).*J(eta);
+                id1 = @(xi) K1.*N1(xi).*J(xi); % [Disregard]q1 N1 refer to k-sum counter, not K1 Kernel
+                id2 = @(xi) K1.*N2(xi).*J(xi);
 
-                is1 = @(eta) K2.*N1(eta).*J(eta);
-                is2 = @(eta) K2.*N2(eta).*J(eta);
+                is1 = @(xi) K2.*N1(xi).*J(xi);
+                is2 = @(xi) K2.*N2(xi).*J(xi);
                 
                 IS = quadl(is1,-1,1,1e-5) + quadl(is2,-1,1,1e-5);
                 ID = quadl(id1,-1,1,1e-5) + quadl(id2,-1,1,1e-5);
@@ -135,6 +138,11 @@ for P = 1:Nj-1 %Source Point
       
        MatA(P,Q) = Am;
        MatB(P,Q) = Bm;
+        else
+       
+            MatB(P,Q) = (1/(2*pi))*(log(1/(2*pi))-1);
+              
+        end
     end
 end
 
@@ -182,8 +190,15 @@ for P = 1:Nj-1 %Source Point
 end
 B = B';
 
-z = inv(A)*B;
+z = (A)\B;
 
 
+for k = 1:Nj-1
+    if bcn(k) == 1
+    q(k) = z(k); 
+    else
+    p(k) = z(k);    
+    end
+end
 
 
